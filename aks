@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: install-azure-cli
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      name: install-azure-cli
+  template:
+    metadata:
+      labels:
+        name: install-azure-cli
+    spec:
+      hostNetwork: true
+      containers:
+      - name: install-azure-cli
+        image: ubuntu:22.04
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: rootfs
+          mountPath: /host
+        command:
+        - /bin/bash
+        - -c
+        - |
+          set -e
+          
+          # Perform chroot to access host filesystem
+          chroot /host /bin/bash -c '
+            set -e
+            apt-get update
+            apt-get install -y curl
+
+            # Install Azure CLI
+            curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+          '
+          
+          sleep 3600
+      hostPID: true
+      volumes:
+      - name: rootfs
+        hostPath:
+          path: /
